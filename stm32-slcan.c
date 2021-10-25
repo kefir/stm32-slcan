@@ -58,21 +58,21 @@ static void gpio_setup(void)
     rcc_periph_clock_enable(RCC_GPIOC);
 
     /* Preconfigure LED */
-    gpio_set(GPIOC, GPIO13); /* LED green off */
+    // gpio_set(GPIOC, GPIO13); /* LED green off */
 
     /* Preconfigure Osci pin CAN -> ASCII*/
-    gpio_clear(GPIOC, GPIO14);
+    // gpio_clear(GPIOC, GPIO14);
 
     /* Preconfigure Osci pin ASCII Buffer Send */
-    gpio_clear(GPIOC, GPIO15);
+    // gpio_clear(GPIOC, GPIO15);
 
     /* Configure LED&Osci GPIO */
-    gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
-        GPIO13);
-    gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
-        GPIO14);
-    gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
-        GPIO15);
+    // gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
+    //     GPIO13);
+    // gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
+    //     GPIO14);
+    // gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_PUSHPULL,
+    //     GPIO15);
 
     /* Enable clocks for GPIO port A (for GPIO_USART1_TX) and USART1. */
     rcc_periph_clock_enable(RCC_AFIO);
@@ -182,31 +182,30 @@ static int can_speed(int index)
 
 static void can_setup(void)
 {
-    /* Enable peripheral clocks */
+    /* Enable peripheral clocks. */
     rcc_periph_clock_enable(RCC_AFIO);
-    rcc_periph_clock_enable(RCC_CAN1);
+    rcc_periph_clock_enable(RCC_GPIOA);
+    rcc_periph_clock_enable(RCC_CAN);
 
-    AFIO_MAPR |= AFIO_MAPR_CAN1_REMAP_PORTB;
+    /* Configure CAN pin: RX (input pull-up). */
+    gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
+        GPIO_CNF_INPUT_PULL_UPDOWN, GPIO_CAN_RX);
+    gpio_set(GPIOA, GPIO_CAN_RX);
 
-    /* Configure CAN pin: RX (input pull-up) */
-    gpio_set_mode(GPIO_BANK_CAN1_PB_RX, GPIO_MODE_INPUT,
-        GPIO_CNF_INPUT_PULL_UPDOWN, GPIO_CAN1_PB_RX);
-    gpio_set(GPIO_BANK_CAN1_PB_RX, GPIO_CAN1_PB_RX);
+    /* Configure CAN pin: TX. */
+    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
+        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_CAN_TX);
 
-    /* Configure CAN pin: TX */
-    gpio_set_mode(GPIO_BANK_CAN1_PB_TX, GPIO_MODE_OUTPUT_50_MHZ,
-        GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_CAN1_PB_TX);
-
-    /* NVIC setup */
+    /* NVIC setup. */
     nvic_enable_irq(NVIC_USB_LP_CAN_RX0_IRQ);
     nvic_set_priority(NVIC_USB_LP_CAN_RX0_IRQ, 1);
 
-    /* Reset CAN */
+    /* Reset CAN. */
     can_reset(CAN1);
 
     /* defaultt CAN setting 250 kBaud */
     if (can_speed(5)) {
-        gpio_clear(GPIOC, GPIO13); /* LED green on */
+        // gpio_clear(GPIOC, GPIO13); /* LED green on */
 
         /* Die because we failed to initialize. */
         while (1)
@@ -214,7 +213,9 @@ static void can_setup(void)
     }
 
     /* CAN filter 0 init. */
-    can_filter_id_mask_32bit_init(0, 0, /* CAN ID */
+    can_filter_id_mask_32bit_init(
+        0, /* Filter ID */
+        0, /* CAN ID */
         0, /* CAN ID mask */
         0, /* FIFO assignment (here: FIFO0) */
         true); /* Enable the filter. */
@@ -234,7 +235,7 @@ void sys_tick_handler(void)
     counter++;
     if (counter == 500) {
         counter = 0;
-        gpio_toggle(GPIOC, GPIO13); /* toggle green LED */
+        // gpio_toggle(GPIOC, GPIO13); /* toggle green LED */
     }
 }
 
